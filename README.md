@@ -7,10 +7,10 @@ Turn Splunk into a weather station.  No API or user data required.  All data com
 ![Conditions](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot.png)
 
 ##Weather Trends
-![Weather Trends](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot_1.png)
+![Weather Trends](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot_2.png)
 
 ##Weather Statistics & Plots
-![Weather Stats](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot_2.png)
+![Weather Stats](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot_3.png)
 
 ##Conversions 
 ![Weather Conversions](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot_4.png)

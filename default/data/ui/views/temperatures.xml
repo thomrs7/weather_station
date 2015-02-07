@@ -1,0 +1,136 @@
+<form stylesheet="wx.css">
+  <label>Weather Explorer</label>
+  <description>Compare observation across locations</description>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="dropdown" token="field" searchWhenChanged="true">
+      <label></label>
+      <choice value="Temp">Temperature</choice>
+      <choice value="Dewp">Dew Point</choice>
+      <choice value="Relh">Humidity</choice>
+      <choice value="Winds">Wind Speed</choice>
+      <choice value="Gust">Gusts</choice>
+      <choice value="SLP">Pressure</choice>
+      <default>Temp</default>
+      <change>
+        <set token="value_label">$label$</set>
+      </change>
+    </input>
+    <input type="time" token="time" searchWhenChanged="true">
+      <label></label>
+      <default>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+      </default>
+      <change>
+        <set token="date_label">$label$</set>
+      </change>
+    </input>
+  </fieldset>
+  <search id="internal_data">
+    <query>| tstats mean($field$) as mean range($field$) as range stdev($field$) as stdev  max($field$) as max min($field$) as min  var($field$) as variance from wx by zone, areaDescription | rename areaDescription as location | eval stdev = round(stdev,2) | eval mean = round(mean,2) | eval variance = round(variance,2) | sort zone | fields - zone</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <row>
+    <panel>
+      <table>
+        <title>$value_label$ Data $date_label$</title>
+        <search base="internal_data">
+          <query></query>
+        </search>
+        <option name="charting.axisY2.enabled">undefined</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">25</option>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+        <title>$value_label$ Distribution Last 30 days</title>
+        <search base="internal_data">
+          <query></query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">highlow</option>
+        <option name="count">50</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">bubble</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisLabelsY.majorUnit">5</option>
+      </chart>
+      <map>
+        <title>$value_label$ Mapped  Last 30 days</title>
+        <search>
+          <query>index = wx source=wx_station://* | rename currentobservation.* AS * location.* AS * | rename  latitude AS lat longitude as lon |  geostats  mean($field$) As mean stdev($field$) as STDEV by areaDescription globallimit=0 maxzoomlevel=4</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.drilldown">all</option>
+        <option name="mapping.map.center">(37.58,-96.37)</option>
+        <option name="mapping.map.zoom">4</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.tileLayer.maxZoom">4</option>
+        <option name="mapping.tileLayer.minZoom">4</option>
+        <option name="drilldown">all</option>
+      </map>
+      
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>$value_label$ Average by State $date_label$</title>
+        <search>
+          <query>| tstats values($field$) as data  from wx by zone _time | eval state=substr(zone, 1, 2) | timechart limit=50 mean(data) by state</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,11 @@
+<nav search_view="search" color="#0000ff">
+  <view name="search"  />
+  <view name="observations" default='true' />
+  <view name="temperatures" />
+
+   <collection label="Conversions">
+     <saved name="Temperature Conversions" />
+     <saved name="Wind Speed Conversions" />
+     <saved name="Pressure Conversions" />
+  </collection>
+</nav>

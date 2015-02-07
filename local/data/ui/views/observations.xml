@@ -1,0 +1,212 @@
+<form script="icons_inline.js" stylesheet="wx.css">
+  <label>Observations &amp; Forecast</label>
+  <description>Look at observations from various locations.</description>
+  <fieldset autoRun="true" submitButton="false">
+    <input type="dropdown" token="location" searchWhenChanged="true">
+      <label></label>
+      <search>
+        <query>| tstats values(metar) as metar  from wx by areaDescription</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <default>KSPG</default>
+      <fieldForLabel>areaDescription</fieldForLabel>
+      <fieldForValue>metar</fieldForValue>
+    </input>
+    <input type="time" searchWhenChanged="true">
+      <default>
+        <earliestTime>-7d@h</earliestTime>
+        <latestTime>now</latestTime>
+      </default>
+      <change>
+        <set token="date_label">$label$</set>
+      </change>
+    </input>
+  </fieldset>
+  <search id="internal_data">
+    <query>| tstats latest(Temp) as Temp latest(Relh) as Relh latest(Dewp) as Dewp latest(Winds) as Winds latest(SLP) as SLP FROM wx WHERE metar="$location$"</query>
+    <earliest>-4h@m</earliest>
+    <latest>@m</latest>
+  </search>
+  <search id="time_data">
+    <query>| tstats values(Temp) as Temp values(Relh) as Humidity  values(SLP) as Pressure values(Visibility) as Visibility values(Winds) as "Wind Speed" values(Dewp)  as "Dew Point" FROM wx WHERE metar="$location$"  by _time span=1h</query>
+  </search>
+  <row>
+    <panel>
+      <single>
+        <title>Temperature</title>
+        <search base="internal_data">
+          <query>| table Temp | eval Temp = Temp +"°F"</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Humidity</title>
+        <search base="internal_data">
+          <query>| table Relh | eval Relh = Relh +"%"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Dew Point</title>
+        <search base="internal_data">
+          <query>| table Dewp | eval Dewp = Dewp + +"°F"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Wind Speed</title>
+        <search base="internal_data">
+          <query>| table Winds | eval Winds = Winds + " mph"</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Pressure</title>
+        <search base="internal_data">
+          <query>| table SLP | eval SLP = SLP + " Mib"</query>
+        </search>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Observations $date_label$</title>
+        <search base="time_data">
+          <query>| timechart span=1h mean(Temp) mean(Humidity) mean(Pressure) mean(Visibility) mean("Wind Speed") mean("Dew Point") | rename mean(*) as *</query>
+        </search>
+        <option name="charting.data.count">0</option>
+        <option name="height">350</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel>
+      <table id="table1">
+        <title>Forecast</title>
+        <search>
+          <query>index = wx source=wx_station://* location.metar="$location$" | head 1 | rename data.*{} as *, time.startPeriodName{} as time  time.tempLabel{} as tempLabel  | eval d = mvzip(temperature,text,"|") | eval d = mvzip(d,pop,"|")| eval d = mvzip(d,weather,"|")| eval d = mvzip(d,iconLink,"|") | eval d = mvzip(d,time,"|")| eval d = mvzip(d,tempLabel,"|") | table d | mvexpand d | eval d=split(d, "|") | eval time =  mvindex(d,5) |eval tempLabel =  mvindex(d,6) | eval temp =  mvindex(d,0)| eval pop =  mvindex(d,2) | eval weather =  mvindex(d,3)| eval icon =  mvindex(d,4) | eval text =  mvindex(d,1) |  eval Forecast = time + ": " + " " + tempLabel + " " + temp + " - " + weather | table Forecast  icon</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="wrap">true</option>
+        <option name="height">400</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">4</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$location$">
+    <panel>
+      <chart>
+        <title>Temperature Change $date_label$</title>
+        <search base="time_data">
+          <query>| delta Temp as change | timechart span=4h mean(change) as Change</query>
+        </search>
+        <option name="charting.data.count">0</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Weather Conditions  $date_label$</title>
+        <search>
+          <query>| tstats values(Weather) as weather FROM wx WHERE metar="$location$" by _time span=1h | eventstats count as "totalCount" |  stats sparkline count as Count by weather, totalCount | eval Percentage = Count/totalCount*100 | fields - Count totalCount | sort - Percentage</query>
+        </search>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Daily Temp Standard Deviation  $date_label$</title>
+        <search>
+          <query>| tstats mean(Temp) as Temp FROM wx WHERE metar="$location$" by _time span=1h | eventstats stdevp(Temp) as StdD | eventstats mean(Temp) as Mean |  bucket _time span=1d | eval top = (Mean +  StdD) | eval bottom = (Mean -  StdD) | timechart  span=1d mean(Temp) as "Average Temp" values(Mean) as "Total Avg Temp"   values(top) as top values(bottom) as bottom</query>
+        </search>
+        <option name="charting.data.count">0</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.overlayFields">"Total Avg Temp",top,bottom</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+  </row>
+</form>

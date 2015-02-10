@@ -2,6 +2,7 @@
 
 Turn Splunk into a weather station.  No API or user data required.  All data comes from the National Weather Service, just enter a zipcode.
 
+More detailed docs on the way.
 
 ##Current Conditions
 ![Conditions](https://raw.githubusercontent.com/thomrs7/weather_station/master/appserver/static/screenshot.png)

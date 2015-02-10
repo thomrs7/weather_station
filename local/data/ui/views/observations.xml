@@ -5,7 +5,7 @@
     <input type="dropdown" token="location" searchWhenChanged="true">
       <label></label>
       <search>
-        <query>| tstats values(metar) as metar  from wx by areaDescription</query>
+        <query>| tstats values(metar) as metar  from wx by areaDescription </query>
         <earliest>-24h@h</earliest>
         <latest>now</latest>
       </search>
@@ -24,7 +24,7 @@
     </input>
   </fieldset>
   <search id="internal_data">
-    <query>| tstats latest(Temp) as Temp latest(Relh) as Relh latest(Dewp) as Dewp latest(Winds) as Winds latest(SLP) as SLP FROM wx WHERE metar="$location$"</query>
+    <query>| tstats latest(Temp) as Temp latest(Relh) as Relh latest(Dewp) as Dewp latest(Winds) as Winds latest(SLP) as SLP max(Windd) as Windd FROM wx WHERE metar="$location$" | winddir</query>
     <earliest>-4h@m</earliest>
     <latest>@m</latest>
   </search>
@@ -64,8 +64,10 @@
       <single>
         <title>Wind Speed</title>
         <search base="internal_data">
-          <query>| table Winds | eval Winds = Winds + " mph"</query>
+          <query> | winddir | table Winds Wind_dir | eval Wind_dir=replace(Wind_dir,"N/A","") |  eval Winds = Winds + " mph" + " " +Wind_dir</query>
         </search>
+        <option name="linkView">search</option>
+        <option name="drilldown">none</option>
       </single>
     </panel>
     <panel>
@@ -166,7 +168,7 @@
       <table>
         <title>Weather Conditions  $date_label$</title>
         <search>
-          <query>| tstats values(Weather) as weather FROM wx WHERE metar="$location$" by _time span=1h | eventstats count as "totalCount" |  stats sparkline count as Count by weather, totalCount | eval Percentage = Count/totalCount*100 | fields - Count totalCount | sort - Percentage</query>
+          <query>| tstats values(weather) as weather FROM wx WHERE metar="$location$" by _time span=1h | eventstats count as "totalCount" |  stats sparkline count as Count by weather, totalCount | eval Percentage = Count/totalCount*100 | fields - Count totalCount | sort - Percentage</query>
         </search>
         <option name="wrap">true</option>
         <option name="rowNumbers">false</option>
@@ -184,6 +186,7 @@
           <query>| tstats mean(Temp) as Temp FROM wx WHERE metar="$location$" by _time span=1h | eventstats stdevp(Temp) as StdD | eventstats mean(Temp) as Mean |  bucket _time span=1d | eval top = (Mean +  StdD) | eval bottom = (Mean -  StdD) | timechart  span=1d mean(Temp) as "Average Temp" values(Mean) as "Total Avg Temp"   values(top) as top values(bottom) as bottom</query>
         </search>
         <option name="charting.data.count">0</option>
+        <option name="charting.height">5000</option>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
         <option name="charting.axisTitleX.visibility">collapsed</option>
